@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <string.h>
 
 #define X_AXIS 8
 #define Y_AXIS 8
@@ -36,6 +37,7 @@ typedef struct pieces{
 // a white piece
 // EMPTY represented by NULL pointer
 pieces* Board_status[X_AXIS][Y_AXIS];
+bool whiteTurn = true;
 
 const pieces StartingPosition[]={
     {a,1,white,Pawn},{b,1,white,Pawn},{c,1,white,Pawn},{d,1,white,Pawn},{e,1,white,Pawn},{f,1,white,Pawn},{g,1,white,Pawn},{h,1,white,Pawn},
@@ -46,13 +48,68 @@ const pieces StartingPosition[]={
 
 
 bool SetupStartingPosition();
+bool MakingMove(int,int,int,int);
 void Draw();
 
 void main(){
     SetupStartingPosition();
-    Draw();
+    bool endgame =false;
+    char FromPosition[2];
+    char ToPosition[2];
+    int FromX,FromY,ToX,ToY;
+    pieces* From;
+    pieces* Destination;
+    while(!endgame){
+           
+        if(whiteTurn){
+            printf("white turn:\n");
+        }
+        else{
+            printf("black turn:\n");
+        }
+	    printf("pieces To Move:\n");
+	    scanf("%s",FromPosition);
+	    printf("Move To position:\n");
+	    scanf("%s",ToPosition);
+        FromX = FromPosition[0] -97;
+        FromY = FromPosition[1] -49;
+        ToX = ToPosition[0] -97;
+        ToY = ToPosition[1] -49;
+        MakingMove(FromX,FromY,ToX,ToY);
+        whiteTurn= !whiteTurn;
+        Draw();
+
+    }
+    
     printf("Testing\n");
     return;
+}
+
+//Determine whether the move is legal and make a move
+bool MakingMove(int FromX,int FromY,int ToX,int ToY){
+    pieces* pieceToMove;
+    if(Board_status[FromX][FromY]!=NULL){
+        pieceToMove = Board_status[FromX][FromY];
+    }
+    else{
+        printf("Illegal Move\n");
+        return false;
+    }
+    if((whiteTurn == true && pieceToMove->whichSide !=white) || 
+        (whiteTurn == false && pieceToMove->whichSide !=black)){
+
+        printf("Illegal Move\n");
+        return false;
+    }
+    pieceToMove->x =ToX;
+    pieceToMove->y =ToY;
+    if(Board_status[ToX][ToY]!=NULL){
+        printf("Captured\n");
+        free(Board_status[ToX][ToY]);
+    }
+    Board_status[ToX][ToY] = pieceToMove;
+    Board_status[FromX][FromY] = NULL;
+
 }
 
 
