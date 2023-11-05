@@ -49,6 +49,12 @@ const pieces StartingPosition[]={
 
 bool SetupStartingPosition();
 bool MakingMove(int,int,int,int);
+bool CheckRulesForKnight(pieces*,int, int);
+bool CheckRulesForPawn(pieces*,int, int);
+bool CheckRulesForCastle(pieces*,int, int);
+bool CheckRulesForBishop(pieces*,int, int);
+bool CheckRulesForQueen(pieces*,int, int);
+bool CheckRulesForKing(pieces*,int, int);
 void Draw();
 
 void main(){
@@ -59,6 +65,7 @@ void main(){
     int FromX,FromY,ToX,ToY;
     pieces* From;
     pieces* Destination;
+    Draw();
     while(!endgame){
            
         if(whiteTurn){
@@ -71,12 +78,13 @@ void main(){
 	    scanf("%s",FromPosition);
 	    printf("Move To position:\n");
 	    scanf("%s",ToPosition);
-        FromX = FromPosition[0] -97;
+        FromX = FromPosition[0] -97; //This converts the user char input to value
         FromY = FromPosition[1] -49;
         ToX = ToPosition[0] -97;
         ToY = ToPosition[1] -49;
-        MakingMove(FromX,FromY,ToX,ToY);
-        whiteTurn= !whiteTurn;
+        if(MakingMove(FromX,FromY,ToX,ToY)){
+            whiteTurn= !whiteTurn; //Do not proceed if player makes illegal move
+        }
         Draw();
 
     }
@@ -88,17 +96,28 @@ void main(){
 //Determine whether the move is legal and make a move
 bool MakingMove(int FromX,int FromY,int ToX,int ToY){
     pieces* pieceToMove;
-    if(Board_status[FromX][FromY]!=NULL){
-        pieceToMove = Board_status[FromX][FromY];
-    }
-    else{
-        printf("Illegal Move\n");
-        return false;
-    }
+    pieceToMove = Board_status[FromX][FromY];
+
     if((whiteTurn == true && pieceToMove->whichSide !=white) || 
         (whiteTurn == false && pieceToMove->whichSide !=black)){
 
-        printf("Illegal Move\n");
+        printf("Illegal Move: Not your pieces\n");
+        return false;
+    }
+
+    if(Board_status[FromX][FromY]!=NULL){
+        if(((pieceToMove->Role == Knight) && !CheckRulesForKnight(pieceToMove,ToX, ToY))||
+           ((pieceToMove->Role == Castle) && !CheckRulesForCastle(pieceToMove,ToX, ToY))||
+           ((pieceToMove->Role == Bishop) && !CheckRulesForBishop(pieceToMove,ToX, ToY))||
+           ((pieceToMove->Role == Pawn) && !CheckRulesForPawn(pieceToMove,ToX, ToY))    ||
+           ((pieceToMove->Role == Queen) && !CheckRulesForQueen(pieceToMove,ToX, ToY))||
+           ((pieceToMove->Role == King) && !CheckRulesForKing(pieceToMove,ToX, ToY))){
+            printf("Illegal Move:Illegal Move\n");
+            return false;
+        }
+
+    }
+    else{
         return false;
     }
     pieceToMove->x =ToX;
@@ -132,9 +151,112 @@ bool SetupStartingPosition(){
      return true;
 }
 
+bool CheckRulesForKnight(pieces* PieceToMove,int ToX, int ToY){
+    int TempX;
+    int TempY;
+    int PositionX = (PieceToMove->x);
+    int PositionY = (PieceToMove->y);
+
+    printf("x= %d\n",(PieceToMove->x));
+    printf("y= %d\n",(PieceToMove->y));
+    printf("MoveTo\n");
+    printf("x= %d\n",ToX);
+    printf("y= %d\n",ToY);
+
+
+
+    TempX = PositionX + 2;
+    TempY = PositionY + 1;
+    printf("Temp x= %d\n",TempX);
+    printf("Temp y= %d\n\n",TempY);
+    if((TempX == ToX) && (TempY == ToY)){
+        return true;
+    }
+    TempX = PositionX + 2;
+    TempY = PositionY - 1;
+    printf("Temp x= %d\n",TempX);
+    printf("Temp y= %d\n\n",TempY);
+    if((TempX == ToX) && (TempY == ToY)){
+        return true;
+    }
+
+    TempX = PositionX + 1;
+    TempY = PositionY + 2;
+    printf("Temp x= %d\n",TempX);
+    printf("Temp y= %d\n\n",TempY);
+    if((TempX == ToX) && (TempY == ToY)){
+        return true;
+    }
+
+    TempX = PositionX + 1;
+    TempY = PositionY - 2;
+    printf("Temp x= %d\n",TempX);
+    printf("Temp y= %d\n\n",TempY);
+    if((TempX == ToX) && (TempY == ToY)){
+        return true;
+    }
+
+    
+    TempX = PositionX - 2;
+    TempY = PositionY + 1;
+    printf("Temp x= %d\n",TempX);
+    printf("Temp y= %d\n\n",TempY);
+    if((TempX == ToX) && (TempY == ToY)){
+        return true;
+    }
+
+    
+    TempX = PositionX -2 ;
+    TempY = PositionY -1;
+    printf("Temp x= %d\n",TempX);
+    printf("Temp y= %d\n\n",TempY);
+    if((TempX == ToX) && (TempY == ToY)){
+        return true;
+    }
+
+    
+    TempX = PositionX-1;
+    TempY = PositionY-2;
+    printf("Temp x= %d\n",TempX);
+    printf("Temp y= %d\n\n",TempY);
+    if((TempX == ToX) && (TempY == ToY)){
+        return true;
+    }
+
+    
+    TempX = PositionX - 1;
+    TempY = PositionY + 2;
+    printf("Temp x= %d\n",TempX);
+    printf("Temp y= %d\n\n",TempY);
+    if((TempX == ToX) && (TempY == ToY)){
+        return true;
+    }
+    printf(" Knight Illegal Move:Illegal Move\n");
+
+
+    return false;
+}
+
+bool CheckRulesForPawn(pieces* PieceToMove,int ToX, int ToY){
+    return true;//To be Implemented
+}
+bool CheckRulesForCastle(pieces* PieceToMove,int ToX, int ToY){
+    return true;
+}
+bool CheckRulesForBishop(pieces* PieceToMove,int ToX, int ToY){
+    return true;
+}
+bool CheckRulesForQueen(pieces* PieceToMove,int ToX, int ToY){
+    return true;
+}
+bool CheckRulesForKing(pieces* PieceToMove,int ToX, int ToY){
+    return true;
+}
+
+
 void Draw(){
 
-    for(int y =0;y < Y_AXIS;y++){
+    for(int y =Y_AXIS-1;y >= 0 ;y--){
 	    for(int x = 0;x<X_AXIS;x++){
            	if(Board_status[x][y] == NULL){
                 printf(" 0 ");
@@ -171,3 +293,8 @@ void Draw(){
     printf("\n\n");
     }
 }
+
+
+
+
+
