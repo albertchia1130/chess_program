@@ -157,14 +157,6 @@ bool CheckRulesForKnight(pieces* PieceToMove,int ToX, int ToY){
     int PositionX = (PieceToMove->x);
     int PositionY = (PieceToMove->y);
 
-    printf("x= %d\n",(PieceToMove->x));
-    printf("y= %d\n",(PieceToMove->y));
-    printf("MoveTo\n");
-    printf("x= %d\n",ToX);
-    printf("y= %d\n",ToY);
-
-
-
     TempX = PositionX + 2;
     TempY = PositionY + 1;
     printf("Temp x= %d\n",TempX);
@@ -196,7 +188,6 @@ bool CheckRulesForKnight(pieces* PieceToMove,int ToX, int ToY){
         return true;
     }
 
-    
     TempX = PositionX - 2;
     TempY = PositionY + 1;
     printf("Temp x= %d\n",TempX);
@@ -205,7 +196,6 @@ bool CheckRulesForKnight(pieces* PieceToMove,int ToX, int ToY){
         return true;
     }
 
-    
     TempX = PositionX -2 ;
     TempY = PositionY -1;
     printf("Temp x= %d\n",TempX);
@@ -213,7 +203,6 @@ bool CheckRulesForKnight(pieces* PieceToMove,int ToX, int ToY){
     if((TempX == ToX) && (TempY == ToY)){
         return true;
     }
-
     
     TempX = PositionX-1;
     TempY = PositionY-2;
@@ -223,7 +212,6 @@ bool CheckRulesForKnight(pieces* PieceToMove,int ToX, int ToY){
         return true;
     }
 
-    
     TempX = PositionX - 1;
     TempY = PositionY + 2;
     printf("Temp x= %d\n",TempX);
@@ -241,12 +229,131 @@ bool CheckRulesForPawn(pieces* PieceToMove,int ToX, int ToY){
     return true;//To be Implemented
 }
 bool CheckRulesForCastle(pieces* PieceToMove,int ToX, int ToY){
+
+    int PositionX = (PieceToMove->x);
+    int PositionY = (PieceToMove->y);
+    int TempX=PositionX;
+    int TempY=PositionY;
+    int Direction; // Indicate the direction of search (up down left right)
+
+    if(PositionX == ToX){
+        if(PositionY < ToY){
+            Direction = 0;
+        }
+        else if(PositionY > ToY){
+            Direction = 1;
+        }
+        else{
+            printf("Not Straight\n");
+            return false;
+        }
+    }
+    else if(PositionY == ToY){
+        if(PositionX < ToX){
+            Direction = 2;
+        }
+        else if(PositionX > ToX){
+            Direction = 3;
+        }
+        else{
+            printf("Not Straight\n");
+            return false;
+        }
+    }
+    else{
+        printf("Not Straight\n");
+        return false;
+    }
+
+
+    while(true){
+        if(Direction == 0){
+            TempY++;
+        }
+        else if(Direction ==1){
+            TempY--;
+        }
+       else if(Direction ==2){
+            TempX++;
+        }
+       else if(Direction ==3){
+            TempX--;
+        }
+        if(TempX ==ToX && TempY ==ToY){
+            break;
+        }
+        else if((Board_status[TempX][TempY] != NULL) && (TempX !=ToX || TempY !=ToY)){
+            return false; // return false if there is a piece blocking in the way thus illegal
+        }
+    }
+
     return true;
 }
 bool CheckRulesForBishop(pieces* PieceToMove,int ToX, int ToY){
+
+    int PositionX = (PieceToMove->x);
+    int PositionY = (PieceToMove->y);
+    int TempX=PositionX;
+    int TempY=PositionY;
+    int Direction; // Indicate the direction of search (up down left right)
+
+    if((abs(ToX - PositionX)) != (abs(ToY - PositionY))){
+        printf("Not diagonal \n");
+        return false;
+    }
+    else if(PositionX > ToX){
+        if(PositionY < ToY){ //315 degree
+            Direction = 0; 
+        }
+        else if(PositionY > ToY){ //225 degree
+            Direction = 1; 
+        }
+        else{
+            return false;
+        }
+    }
+    else if(PositionX < ToX){
+        if(PositionY < ToY){ //45 degree
+            Direction = 2; 
+        }
+        else if(PositionY > ToY){ // 135 degree
+            Direction = 3;
+        }
+        else{
+            return false;
+        }
+    }
+
+    while(true){
+        if(Direction == 0){
+            TempX--;
+            TempY++;
+        }
+        else if(Direction ==1){
+            TempX--;
+            TempY--;
+        }
+       else if(Direction ==2){
+            TempX++;
+            TempY++;
+        }
+       else if(Direction ==3){
+            TempX++;
+            TempY--;
+        }
+        if(TempX ==ToX && TempY ==ToY){
+            break;
+        }
+        else if((Board_status[TempX][TempY] != NULL) && (TempX !=ToX || TempY !=ToY)){
+            return false; // return false if there is a piece blocking in the way thus illegal
+        }
+    }
     return true;
 }
 bool CheckRulesForQueen(pieces* PieceToMove,int ToX, int ToY){
+    if((CheckRulesForBishop(PieceToMove,ToX, ToY) == false) && (CheckRulesForCastle(PieceToMove,ToX, ToY) == false)){ // Queen share the same moveset as bishop and castle
+        return false;
+    }
     return true;
 }
 bool CheckRulesForKing(pieces* PieceToMove,int ToX, int ToY){
