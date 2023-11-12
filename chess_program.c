@@ -38,6 +38,9 @@ typedef struct pieces{
 // EMPTY represented by NULL pointer
 pieces* Board_status[X_AXIS][Y_AXIS];
 bool whiteTurn = true;
+bool Castling = false;
+bool EnPassant = false;
+pieces* EnPassantPiece = NULL;
 
 const pieces StartingPosition[]={
     {a,1,white,Pawn},{b,1,white,Pawn},{c,1,white,Pawn},{d,1,white,Pawn},{e,1,white,Pawn},{f,1,white,Pawn},{g,1,white,Pawn},{h,1,white,Pawn},
@@ -97,13 +100,27 @@ void main(){
 bool MakingMove(int FromX,int FromY,int ToX,int ToY){
     pieces* pieceToMove;
     pieceToMove = Board_status[FromX][FromY];
+    printf("this\n");
+    if((FromX >= X_AXIS) || (FromY >= Y_AXIS) || (FromX < 0) || (FromX < 0) ||
+       (ToX >= X_AXIS) || (ToY >= Y_AXIS) || (ToX < 0) || (ToY < 0)){
+            printf("Illegal Move: Illegal input\n");
+            return false;
+    }
+
+    if(Board_status[FromX][FromY] == NULL) 
+    {
+        printf("Illegal Move: Empty\n");
+        return false;
+        
+    }
 
     if((whiteTurn == true && pieceToMove->whichSide !=white) || 
         (whiteTurn == false && pieceToMove->whichSide !=black)){
 
-        printf("Illegal Move: Not your pieces\n");
+        printf("Illegal Move: Not your piece\n");
         return false;
     }
+
 
     if(Board_status[FromX][FromY]!=NULL){
         if(((pieceToMove->Role == Knight) && !CheckRulesForKnight(pieceToMove,ToX, ToY))||
@@ -112,13 +129,20 @@ bool MakingMove(int FromX,int FromY,int ToX,int ToY){
            ((pieceToMove->Role == Pawn) && !CheckRulesForPawn(pieceToMove,ToX, ToY))    ||
            ((pieceToMove->Role == Queen) && !CheckRulesForQueen(pieceToMove,ToX, ToY))||
            ((pieceToMove->Role == King) && !CheckRulesForKing(pieceToMove,ToX, ToY))){
-            printf("Illegal Move:Illegal Move\n");
+            printf("Illegal Move: no possible moveset\n");
             return false;
         }
 
     }
     else{
         return false;
+    }
+
+    if((Board_status[ToX][ToY] != NULL) && (pieceToMove->whichSide == Board_status[ToX][ToY]->whichSide) && 
+       (!Castling)){
+        printf("Illegal Move: Self Capture is not allowed\n");
+        return false;
+
     }
     pieceToMove->x =ToX;
     pieceToMove->y =ToY;
@@ -128,6 +152,56 @@ bool MakingMove(int FromX,int FromY,int ToX,int ToY){
     }
     Board_status[ToX][ToY] = pieceToMove;
     Board_status[FromX][FromY] = NULL;
+    if((pieceToMove->Role == Pawn) &&
+       (((pieceToMove->whichSide == white) && (ToY == 7)) ||
+       ((pieceToMove->whichSide == black) && (ToY == 0)))){
+        char selection;
+        while(1){
+            printf("Promotion: Queen[Q] Knight[K] Castle[C] Bishop[B] \n ");
+            selection = getchar();
+            if(selection == 'q'){
+                pieceToMove->Role = Queen;
+                break;
+            }
+            else if(selection == 'k'){
+               pieceToMove->Role = Knight;
+               break;
+            }
+            else if(selection == 'c'){
+               pieceToMove->Role = Castle;
+               break;
+            }
+            else if(selection == 'b'){
+                pieceToMove->Role = Bishop;
+                break;
+            }
+            else{
+                printf("Invalid Selection\n");
+            }
+       }
+    }
+    
+    return true;
+}
+
+bool IsPositionInCheck(pieces* KingPiece, int PositionX, int PositionY){
+        for(int y = 0; y<Y_AXIS; y++){
+	        for(int x = 0;x<X_AXIS;x++){
+                if((Board_status[x][y] != NULL) && (Board_status[x][y]->whichSide != KingPiece->whichSide)){
+                    if(((Board_status[x][y]->Role == Knight) && CheckRulesForKnight(Board_status[x][y],PositionX, PositionY))||
+                       ((Board_status[x][y]->Role == Castle) && CheckRulesForCastle(Board_status[x][y],PositionX, PositionY))||
+                       ((Board_status[x][y]->Role == Bishop) && CheckRulesForBishop(Board_status[x][y],PositionX, PositionY))||
+                       ((Board_status[x][y]->Role == Pawn) && CheckRulesForPawn(Board_status[x][y],PositionX, PositionY))    ||
+                       ((Board_status[x][y]->Role == Queen) && CheckRulesForQueen(Board_status[x][y],PositionX, PositionY))||
+                        ((Board_status[x][y]->Role == King) && CheckRulesForKing(Board_status[x][y],PositionX, PositionY))){
+                            return true;
+
+                        }
+                }
+
+            }
+        }
+        return false;
 
 }
 
@@ -159,63 +233,47 @@ bool CheckRulesForKnight(pieces* PieceToMove,int ToX, int ToY){
 
     TempX = PositionX + 2;
     TempY = PositionY + 1;
-    printf("Temp x= %d\n",TempX);
-    printf("Temp y= %d\n\n",TempY);
     if((TempX == ToX) && (TempY == ToY)){
         return true;
     }
     TempX = PositionX + 2;
     TempY = PositionY - 1;
-    printf("Temp x= %d\n",TempX);
-    printf("Temp y= %d\n\n",TempY);
     if((TempX == ToX) && (TempY == ToY)){
         return true;
     }
 
     TempX = PositionX + 1;
     TempY = PositionY + 2;
-    printf("Temp x= %d\n",TempX);
-    printf("Temp y= %d\n\n",TempY);
     if((TempX == ToX) && (TempY == ToY)){
         return true;
     }
 
     TempX = PositionX + 1;
     TempY = PositionY - 2;
-    printf("Temp x= %d\n",TempX);
-    printf("Temp y= %d\n\n",TempY);
     if((TempX == ToX) && (TempY == ToY)){
         return true;
     }
 
     TempX = PositionX - 2;
     TempY = PositionY + 1;
-    printf("Temp x= %d\n",TempX);
-    printf("Temp y= %d\n\n",TempY);
     if((TempX == ToX) && (TempY == ToY)){
         return true;
     }
 
     TempX = PositionX -2 ;
     TempY = PositionY -1;
-    printf("Temp x= %d\n",TempX);
-    printf("Temp y= %d\n\n",TempY);
     if((TempX == ToX) && (TempY == ToY)){
         return true;
     }
     
     TempX = PositionX-1;
     TempY = PositionY-2;
-    printf("Temp x= %d\n",TempX);
-    printf("Temp y= %d\n\n",TempY);
     if((TempX == ToX) && (TempY == ToY)){
         return true;
     }
 
     TempX = PositionX - 1;
     TempY = PositionY + 2;
-    printf("Temp x= %d\n",TempX);
-    printf("Temp y= %d\n\n",TempY);
     if((TempX == ToX) && (TempY == ToY)){
         return true;
     }
@@ -226,7 +284,56 @@ bool CheckRulesForKnight(pieces* PieceToMove,int ToX, int ToY){
 }
 
 bool CheckRulesForPawn(pieces* PieceToMove,int ToX, int ToY){
-    return true;//To be Implemented
+    int TempX;
+    int TempY;
+    int PositionX = (PieceToMove->x);
+    int PositionY = (PieceToMove->y);
+
+
+    if((PieceToMove->whichSide == white) &&
+        (ToY == (PositionY+1)) &&
+        (ToX == PositionX)){
+            if(Board_status[ToX][ToY] == NULL){
+               return true;
+            }
+    }
+    else if((PieceToMove->whichSide == black) &&
+        (ToY == (PositionY-1)) &&
+        (ToX == PositionX)){
+            if(Board_status[ToX][ToY] == NULL){
+               return true;
+            }
+    }
+    else if((PieceToMove->whichSide == white) &&
+        (ToY == (PositionY+2)) &&
+        (ToX == PositionX)){
+            if((Board_status[ToX][ToY] == NULL) && (PositionY == 1)){
+               return true;
+            }
+    }
+    else if((PieceToMove->whichSide == black) &&
+        (ToY == (PositionY-2)) &&
+        (ToX == PositionX)){
+            if((Board_status[ToX][ToY] == NULL) && (PositionY == 6)){
+               return true;
+            }
+    }
+    else if((PieceToMove->whichSide == white) &&
+        (ToY == (PositionY+1)) &&
+        ((ToX == (PositionX+1)) || (ToX == (PositionX-1)))){
+            if(Board_status[ToX][ToY] != NULL){
+               return true;
+            }
+    }
+    else if((PieceToMove->whichSide == black) &&
+        (ToY == (PositionY-1)) &&
+        ((ToX == (PositionX+1)) || (ToX == (PositionX-1)))){
+            if(Board_status[ToX][ToY] != NULL){
+               return true;
+            }
+    }
+
+    return false;//To be Implemented
 }
 bool CheckRulesForCastle(pieces* PieceToMove,int ToX, int ToY){
 
@@ -244,7 +351,6 @@ bool CheckRulesForCastle(pieces* PieceToMove,int ToX, int ToY){
             Direction = 1;
         }
         else{
-            printf("Not Straight\n");
             return false;
         }
     }
@@ -256,12 +362,10 @@ bool CheckRulesForCastle(pieces* PieceToMove,int ToX, int ToY){
             Direction = 3;
         }
         else{
-            printf("Not Straight\n");
             return false;
         }
     }
     else{
-        printf("Not Straight\n");
         return false;
     }
 
@@ -298,7 +402,6 @@ bool CheckRulesForBishop(pieces* PieceToMove,int ToX, int ToY){
     int Direction; // Indicate the direction of search (up down left right)
 
     if((abs(ToX - PositionX)) != (abs(ToY - PositionY))){
-        printf("Not diagonal \n");
         return false;
     }
     else if(PositionX > ToX){
@@ -357,6 +460,12 @@ bool CheckRulesForQueen(pieces* PieceToMove,int ToX, int ToY){
     return true;
 }
 bool CheckRulesForKing(pieces* PieceToMove,int ToX, int ToY){
+    int PositionX = (PieceToMove->x);
+    int PositionY = (PieceToMove->y);
+    if((abs(ToX - PositionX) > 1) ||
+        (abs(ToY - PositionY) > 1)){
+            return false;
+        }
     return true;
 }
 
