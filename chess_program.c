@@ -40,6 +40,7 @@ pieces* Board_status[X_AXIS][Y_AXIS];
 bool whiteTurn = true;
 bool Castling = false;
 bool EnPassant = false;
+bool EnPassantTaken = false;
 pieces* EnPassantPiece = NULL;
 
 const pieces StartingPosition[]={
@@ -98,6 +99,7 @@ void main(){
 
 //Determine whether the move is legal and make a move
 bool MakingMove(int FromX,int FromY,int ToX,int ToY){
+    bool SetEnpassant = false;
     pieces* pieceToMove;
     pieceToMove = Board_status[FromX][FromY];
     printf("this\n");
@@ -150,8 +152,35 @@ bool MakingMove(int FromX,int FromY,int ToX,int ToY){
         printf("Captured\n");
         free(Board_status[ToX][ToY]);
     }
+    else if(EnPassantTaken){
+        if(pieceToMove->whichSide == white){
+            free(Board_status[ToX][ToY-1]);
+            Board_status[ToX][ToY-1] = NULL;
+            printf("EnPassant\n");
+
+        }
+        else if(pieceToMove->whichSide == black){
+            free(Board_status[ToX][ToY+1]);
+            Board_status[ToX][ToY+1] = NULL;
+            printf("EnPassant\n");
+        }
+        EnPassantTaken = false;
+    }
     Board_status[ToX][ToY] = pieceToMove;
     Board_status[FromX][FromY] = NULL;
+    if((pieceToMove->Role == Pawn) && (abs(ToY - FromY) == 2)){
+        
+        EnPassant = true;
+        SetEnpassant = true;
+        EnPassantPiece = pieceToMove;
+    }
+
+    if((SetEnpassant == false) && (EnPassant == true)){
+        EnPassant = false;
+        EnPassantPiece = NULL;
+    }
+
+
     if((pieceToMove->Role == Pawn) &&
        (((pieceToMove->whichSide == white) && (ToY == 7)) ||
        ((pieceToMove->whichSide == black) && (ToY == 0)))){
@@ -324,12 +353,20 @@ bool CheckRulesForPawn(pieces* PieceToMove,int ToX, int ToY){
             if(Board_status[ToX][ToY] != NULL){
                return true;
             }
+            else if((EnPassant == true) && (Board_status[ToX][ToY-1] == EnPassantPiece)){
+                EnPassantTaken = true;
+                return true;
+            }
     }
     else if((PieceToMove->whichSide == black) &&
         (ToY == (PositionY-1)) &&
         ((ToX == (PositionX+1)) || (ToX == (PositionX-1)))){
             if(Board_status[ToX][ToY] != NULL){
                return true;
+            }
+            else if((EnPassant == true) && (Board_status[ToX][ToY+1] == EnPassantPiece)){
+                EnPassantTaken = true;
+                return true;
             }
     }
 
@@ -454,10 +491,10 @@ bool CheckRulesForBishop(pieces* PieceToMove,int ToX, int ToY){
     return true;
 }
 bool CheckRulesForQueen(pieces* PieceToMove,int ToX, int ToY){
-    if((CheckRulesForBishop(PieceToMove,ToX, ToY) == false) && (CheckRulesForCastle(PieceToMove,ToX, ToY) == false)){ // Queen share the same moveset as bishop and castle
-        return false;
+    if((CheckRulesForBishop(PieceToMove,ToX, ToY) == true) || (CheckRulesForCastle(PieceToMove,ToX, ToY) == true)){ // Queen share the same moveset as bishop and castle
+        return true;
     }
-    return true;
+    return false;
 }
 bool CheckRulesForKing(pieces* PieceToMove,int ToX, int ToY){
     int PositionX = (PieceToMove->x);
