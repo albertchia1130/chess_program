@@ -38,16 +38,22 @@ typedef struct pieces{
 // EMPTY represented by NULL pointer
 pieces* Board_status[X_AXIS][Y_AXIS];
 bool whiteTurn = true;
-bool Castling = false;
+bool White_QueenSideCastling = true;
+bool White_KingSideCastling = true;
+bool Black_QueenSideCastling = true;
+bool Black_KingSideCastling = true;
 bool EnPassant = false;
 bool EnPassantTaken = false;
+bool Castling = false;
 pieces* EnPassantPiece = NULL;
+pieces* WhiteKing = NULL;
+pieces* BlackKing = NULL;
 
 const pieces StartingPosition[]={
     {a,1,white,Pawn},{b,1,white,Pawn},{c,1,white,Pawn},{d,1,white,Pawn},{e,1,white,Pawn},{f,1,white,Pawn},{g,1,white,Pawn},{h,1,white,Pawn},
-    {a,0,white,Castle},{b,0,white,Knight},{c,0,white,Bishop},{d,0,white,King},{e,0,white,Queen},{f,0,white,Bishop},{g,0,white,Knight},{h,0,white,Castle},
+    {a,0,white,Castle},{b,0,white,Knight},{c,0,white,Bishop},{d,0,white,Queen},{e,0,white,King},{f,0,white,Bishop},{g,0,white,Knight},{h,0,white,Castle},
     {a,6,black,Pawn},{b,6,black,Pawn},{c,6,black,Pawn},{d,6,black,Pawn},{e,6,black,Pawn},{f,6,black,Pawn},{g,6,black,Pawn},{h,6,black,Pawn},
-    {a,7,black,Castle},{b,7,black,Knight},{c,7,black,Bishop},{d,7,black,King},{e,7,black,Queen},{f,7,black,Bishop},{g,7,black,Knight},{h,7,black,Castle}
+    {a,7,black,Castle},{b,7,black,Knight},{c,7,black,Bishop},{d,7,black,Queen},{e,7,black,King},{f,7,black,Bishop},{g,7,black,Knight},{h,7,black,Castle}
 };
 
 
@@ -59,6 +65,7 @@ bool CheckRulesForCastle(pieces*,int, int);
 bool CheckRulesForBishop(pieces*,int, int);
 bool CheckRulesForQueen(pieces*,int, int);
 bool CheckRulesForKing(pieces*,int, int);
+bool IsKingInCheck(pieces*);
 void Draw();
 
 void main(){
@@ -88,6 +95,12 @@ void main(){
         ToY = ToPosition[1] -49;
         if(MakingMove(FromX,FromY,ToX,ToY)){
             whiteTurn= !whiteTurn; //Do not proceed if player makes illegal move
+        }
+        if(whiteTurn && IsKingInCheck(WhiteKing)){
+            printf("Check\n");
+        }
+        else if(!whiteTurn && IsKingInCheck(BlackKing)){
+            printf("Check\n");
         }
         Draw();
 
@@ -146,41 +159,94 @@ bool MakingMove(int FromX,int FromY,int ToX,int ToY){
         return false;
 
     }
-    pieceToMove->x =ToX;
-    pieceToMove->y =ToY;
-    if(Board_status[ToX][ToY]!=NULL){
-        printf("Captured\n");
-        free(Board_status[ToX][ToY]);
-    }
-    else if(EnPassantTaken){
-        if(pieceToMove->whichSide == white){
-            free(Board_status[ToX][ToY-1]);
-            Board_status[ToX][ToY-1] = NULL;
-            printf("EnPassant\n");
+    if(Castling){
+
+        if(ToX > FromX){
+            pieceToMove->x = (pieceToMove->x)+2;
+            Board_status[h][FromY]->x =  (Board_status[h][FromY]->x) -2;
+
+            Board_status[ToX][ToY] = pieceToMove; //Moving King
+            Board_status[FromX][FromY] = NULL;
+            Board_status[f][FromY] = Board_status[h][FromY]; // Moving Castle
+            Board_status[h][FromY] = NULL;
 
         }
-        else if(pieceToMove->whichSide == black){
-            free(Board_status[ToX][ToY+1]);
-            Board_status[ToX][ToY+1] = NULL;
-            printf("EnPassant\n");
+        else if(ToX < FromX){
+            pieceToMove->x = (pieceToMove->x)-22;
+            Board_status[h][FromY]->x =  (Board_status[h][FromY]->x) +3;
+
+            Board_status[ToX][ToY] = pieceToMove; //Moving King
+            Board_status[FromX][FromY] = NULL;
+            Board_status[d][FromY] = Board_status[a][FromY]; // Moving Castle
+            Board_status[a][FromY] = NULL;
+
         }
-        EnPassantTaken = false;
+        Castling = false;
+
     }
-    Board_status[ToX][ToY] = pieceToMove;
-    Board_status[FromX][FromY] = NULL;
+    else{
+        pieceToMove->x =ToX;
+        pieceToMove->y =ToY;
+        if(Board_status[ToX][ToY]!=NULL){
+            printf("Captured\n");
+            free(Board_status[ToX][ToY]);
+        }
+        else if(EnPassantTaken){
+            if(pieceToMove->whichSide == white){
+                free(Board_status[ToX][ToY-1]);
+                Board_status[ToX][ToY-1] = NULL;
+                printf("EnPassant\n");
+            }
+            else if(pieceToMove->whichSide == black){
+                free(Board_status[ToX][ToY+1]);
+                Board_status[ToX][ToY+1] = NULL;
+                printf("EnPassant\n");
+            }
+            EnPassantTaken = false;
+        }
+        Board_status[ToX][ToY] = pieceToMove;
+        Board_status[FromX][FromY] = NULL;
+    }
+
     if((pieceToMove->Role == Pawn) && (abs(ToY - FromY) == 2)){
         
         EnPassant = true;
         SetEnpassant = true;
         EnPassantPiece = pieceToMove;
     }
-
     if((SetEnpassant == false) && (EnPassant == true)){
         EnPassant = false;
         EnPassantPiece = NULL;
     }
 
-
+    if(pieceToMove->Role == King){
+        if(pieceToMove->whichSide ==black){
+            Black_KingSideCastling = false;
+            Black_QueenSideCastling = false; //To indicate the pieces already moved and castling is not possible
+        }
+        else if(pieceToMove->whichSide ==black){
+            White_KingSideCastling = false;
+            White_QueenSideCastling = false;
+        }
+    }
+    if(pieceToMove->Role == Castle){
+        if(pieceToMove->whichSide ==black){
+            if(pieceToMove->x == a){
+                Black_KingSideCastling = false;
+            }
+            else if(pieceToMove->x == h){
+                Black_QueenSideCastling = false;
+            }
+        }
+        else if(pieceToMove->whichSide ==white){
+            if(pieceToMove->x == a){
+                Black_KingSideCastling = false;
+            }
+            else if(pieceToMove->x == h){
+                Black_QueenSideCastling = false;  
+            }
+        }
+    }
     if((pieceToMove->Role == Pawn) &&
        (((pieceToMove->whichSide == white) && (ToY == 7)) ||
        ((pieceToMove->whichSide == black) && (ToY == 0)))){
@@ -213,24 +279,28 @@ bool MakingMove(int FromX,int FromY,int ToX,int ToY){
     return true;
 }
 
-bool IsPositionInCheck(pieces* KingPiece, int PositionX, int PositionY){
-        for(int y = 0; y<Y_AXIS; y++){
-	        for(int x = 0;x<X_AXIS;x++){
-                if((Board_status[x][y] != NULL) && (Board_status[x][y]->whichSide != KingPiece->whichSide)){
-                    if(((Board_status[x][y]->Role == Knight) && CheckRulesForKnight(Board_status[x][y],PositionX, PositionY))||
-                       ((Board_status[x][y]->Role == Castle) && CheckRulesForCastle(Board_status[x][y],PositionX, PositionY))||
-                       ((Board_status[x][y]->Role == Bishop) && CheckRulesForBishop(Board_status[x][y],PositionX, PositionY))||
-                       ((Board_status[x][y]->Role == Pawn) && CheckRulesForPawn(Board_status[x][y],PositionX, PositionY))    ||
-                       ((Board_status[x][y]->Role == Queen) && CheckRulesForQueen(Board_status[x][y],PositionX, PositionY))||
-                        ((Board_status[x][y]->Role == King) && CheckRulesForKing(Board_status[x][y],PositionX, PositionY))){
-                            return true;
 
-                        }
+//The following function Check if the King piece is in check by feeding the kings position to all piece available
+bool IsKingInCheck(pieces* KingPiece){
+    int PosX = KingPiece->x;
+    int PosY = KingPiece->y;
+    for(int y = 0; y<Y_AXIS; y++){
+        for(int x = 0;x<X_AXIS;x++){
+            if((Board_status[x][y] != NULL) && (Board_status[x][y]->whichSide != KingPiece->whichSide)){
+                if(((Board_status[x][y]->Role == Knight) && CheckRulesForKnight(Board_status[x][y],PosX, PosY))||
+                    ((Board_status[x][y]->Role == Castle) && CheckRulesForCastle(Board_status[x][y],PosX, PosY))||
+                    ((Board_status[x][y]->Role == Bishop) && CheckRulesForBishop(Board_status[x][y],PosX, PosY))||
+                    ((Board_status[x][y]->Role == Pawn) && CheckRulesForPawn(Board_status[x][y],PosX, PosY))    ||
+                    ((Board_status[x][y]->Role == Queen) && CheckRulesForQueen(Board_status[x][y],PosX, PosY))||
+                    ((Board_status[x][y]->Role == King) && CheckRulesForKing(Board_status[x][y],PosX, PosY))){
+                        return true;
+
                 }
-
             }
+
         }
-        return false;
+    }
+    return false;
 
 }
 
@@ -240,6 +310,7 @@ bool IsPositionInCheck(pieces* KingPiece, int PositionX, int PositionY){
 bool SetupStartingPosition(){
     x_position x_p;
     int y_p;
+    
     int arraySize = sizeof(StartingPosition)/sizeof(StartingPosition[0]);
     for(int i =0; i<arraySize; i++){
         x_p = StartingPosition[i].x;
@@ -250,6 +321,8 @@ bool SetupStartingPosition(){
         Board_status[x_p][y_p]->whichSide = StartingPosition[i].whichSide;
         Board_status[x_p][y_p]->Role =  StartingPosition[i].Role;
     }
+    WhiteKing = Board_status[e][0];
+    BlackKing = Board_status[e][7];
 
      return true;
 }
@@ -306,8 +379,6 @@ bool CheckRulesForKnight(pieces* PieceToMove,int ToX, int ToY){
     if((TempX == ToX) && (TempY == ToY)){
         return true;
     }
-    printf(" Knight Illegal Move:Illegal Move\n");
-
 
     return false;
 }
@@ -499,11 +570,37 @@ bool CheckRulesForQueen(pieces* PieceToMove,int ToX, int ToY){
 bool CheckRulesForKing(pieces* PieceToMove,int ToX, int ToY){
     int PositionX = (PieceToMove->x);
     int PositionY = (PieceToMove->y);
-    if((abs(ToX - PositionX) > 1) ||
-        (abs(ToY - PositionY) > 1)){
-            return false;
+    if((abs(ToX - PositionX) <= 1) &&
+        (abs(ToY - PositionY) <= 1)){
+            return true;
         }
-    return true;
+    
+    if((ToX == g)&& (ToY == PieceToMove->y) && White_KingSideCastling && (!IsKingInCheck(PieceToMove))){
+ 
+        for(int i= (PositionX+1); i < (int)h;i++){
+            if(Board_status[i][PositionY] != NULL){
+                printf(" Round %d\n",i);
+                return false;
+            }
+        }
+        printf("Castling\n");
+        Castling = true;
+        return true;
+
+    }
+    else if((ToX == c) && (ToY == PieceToMove->y) && White_QueenSideCastling && (!IsKingInCheck(PieceToMove))){
+
+        for(int i= (PositionX-1); i > (int)a;i--){
+            if(Board_status[i][PositionY] != NULL){
+                printf(" Round %d\n",i);
+                return false;
+            }
+        }
+        printf("Castling\n");
+        Castling = true;
+        return true;
+    }
+    return false;
 }
 
 
