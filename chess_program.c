@@ -37,6 +37,7 @@ typedef struct pieces{
 // a white piece
 // EMPTY represented by NULL pointer
 pieces* Board_status[X_AXIS][Y_AXIS];
+pieces* Intermediate_Board_status[X_AXIS][Y_AXIS];
 bool whiteTurn = true;
 bool White_QueenSideCastling = true;
 bool White_KingSideCastling = true;
@@ -59,6 +60,8 @@ const pieces StartingPosition[]={
 
 bool SetupStartingPosition();
 bool MakingMove(int,int,int,int);
+void SavingState();
+void RestoreState();
 bool CheckRulesForKnight(pieces*,int, int);
 bool CheckRulesForPawn(pieces*,int, int);
 bool CheckRulesForCastle(pieces*,int, int);
@@ -115,7 +118,6 @@ bool MakingMove(int FromX,int FromY,int ToX,int ToY){
     bool SetEnpassant = false;
     pieces* pieceToMove;
     pieceToMove = Board_status[FromX][FromY];
-    printf("this\n");
     if((FromX >= X_AXIS) || (FromY >= Y_AXIS) || (FromX < 0) || (FromX < 0) ||
        (ToX >= X_AXIS) || (ToY >= Y_AXIS) || (ToX < 0) || (ToY < 0)){
             printf("Illegal Move: Illegal input\n");
@@ -159,6 +161,8 @@ bool MakingMove(int FromX,int FromY,int ToX,int ToY){
         return false;
 
     }
+    SavingState();
+
     if(Castling){
 
         if(ToX > FromX){
@@ -275,8 +279,53 @@ bool MakingMove(int FromX,int FromY,int ToX,int ToY){
             }
        }
     }
+
+    if((whiteTurn && IsKingInCheck(WhiteKing)) ||
+       (!whiteTurn && IsKingInCheck(BlackKing))){
+        RestoreState();
+        printf("Invalid Move:King In Check\n ");
+        return false;
+
+    }
+
     
     return true;
+}
+
+void SavingState(){
+
+    for(int y = 0; y<Y_AXIS; y++){
+        for(int x = 0;x<X_AXIS;x++){
+            if(Board_status[x][y] != NULL){
+                Intermediate_Board_status[x][y]= (pieces*)malloc(sizeof(pieces));
+                *Intermediate_Board_status[x][y]= *Board_status[x][y];
+            }
+            else{
+                Intermediate_Board_status[x][y]= NULL;
+            }
+        }
+    }
+}
+
+void RestoreState(){
+
+    for(int y = 0; y<Y_AXIS; y++){
+        for(int x = 0;x<X_AXIS;x++){
+            if(Intermediate_Board_status[x][y] != NULL){
+                Board_status[x][y]= (pieces*)malloc(sizeof(pieces));
+                *Board_status[x][y]= *Intermediate_Board_status[x][y];
+                if(Intermediate_Board_status[x][y]->Role == King && Intermediate_Board_status[x][y]->whichSide==white){
+                    WhiteKing =  Intermediate_Board_status[x][y];
+                }
+                else if(Intermediate_Board_status[x][y]->Role == King && Intermediate_Board_status[x][y]->whichSide==black){
+                    BlackKing = Intermediate_Board_status[x][y];
+                }
+            }
+            else{
+                Board_status[x][y]= NULL;
+            }
+        }
+    }
 }
 
 
